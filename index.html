@@ -104,6 +104,103 @@
             40% {transform: translateY(-15px);}
             60% {transform: translateY(-7px);}
         }
+
+        /* Chatbot styles */
+#chatbot-container {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    z-index: 9999;
+    font-family: 'Poppins', sans-serif;
+}
+#chatbot-toggle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #002F55;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .25);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
+#chatbot-toggle img {
+    width: 36px;
+    height: 36px;
+}
+#chatbot-window {
+    width: 320px;
+    height: 420px;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, .3);
+    overflow: hidden;
+    position: absolute;
+    bottom: 80px;
+    left: 0;
+    animation: openChat 0.3s ease forwards;
+}
+@keyframes openChat {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+}
+#chatbot-window.hidden {
+    display: none;
+}
+#chatbot-window header {
+    background: #002F55;
+    color: white;
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+}
+#chatbot-messages {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    background: #f5f7fa;
+}
+.chat-msg {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    max-width: 85%;
+    border-radius: 8px;
+    line-height: 1.4;
+    font-size: 0.9rem;
+}
+.chat-msg.user {
+    background: #002F55;
+    color: white;
+    margin-left: auto;
+}
+.chat-msg.bot {
+    background: #e9ecef;
+    color: #212529;
+}
+#chatbot-form {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.5rem;
+    border-top: 1px solid #ccc;
+}
+#chatbot-input {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+#chatbot-form button {
+    padding: 0.5rem 0.75rem;
+    background: #F25C05;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
     </style>
 </head>
 <body class="bg-white text-gray-800">
@@ -762,5 +859,73 @@
         window.addEventListener('scroll', animateOnScroll);
         window.addEventListener('load', animateOnScroll);
     </script>
+
+    <!-- Chatbot Widget -->
+<div id="chatbot-container">
+  <button id="chatbot-toggle" aria-label="Abrir chatbot">
+    <img src="Chatbot.png" alt="Chat martcode.dev" />
+  </button>
+
+  <div id="chatbot-window" class="hidden">
+    <header>
+      <span>martcode.bot</span>
+      <button id="chatbot-close" aria-label="Cerrar">✕</button>
+    </header>
+    <div id="chatbot-messages"></div>
+    <form id="chatbot-form" autocomplete="off">
+      <input type="text" id="chatbot-input" placeholder="Escribí tu mensaje…" />
+      <button type="submit">▶</button>
+    </form>
+  </div>
+</div>
+
+
+<script>
+  const chatBtn = document.getElementById('chatbot-toggle');
+  const chatBox = document.getElementById('chatbot-window');
+  const closeBtn = document.getElementById('chatbot-close');
+  const form = document.getElementById('chatbot-form');
+  const input = document.getElementById('chatbot-input');
+  const chatArea = document.getElementById('chatbot-messages');
+
+  chatBtn.addEventListener('click', () => chatBox.classList.toggle('hidden'));
+  closeBtn.addEventListener('click', () => chatBox.classList.add('hidden'));
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    addMessage('user', msg);
+    input.value = '';
+
+    const botReply = await getOpenAIReply(msg);
+    addMessage('bot', botReply);
+  });
+
+  function addMessage(sender, text) {
+    const div = document.createElement('div');
+    div.className = `chat-msg ${sender}`;
+    div.textContent = text;
+    chatArea.appendChild(div);
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }
+
+  async function getOpenAIReply(userMsg) {
+    try {
+      const res = await fetch('https://pagina-web-de-mi-marca.vercel.app/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMsg })
+      });
+      if (!res.ok) throw new Error('Error servidor');
+      const data = await res.json();
+      return data.reply.trim();
+    } catch (err) {
+      console.error(err);
+      return 'Ups, hubo un problema. Probá de nuevo en un momento 🙏';
+    }
+  }
+</script>
 </body>
 </html>
